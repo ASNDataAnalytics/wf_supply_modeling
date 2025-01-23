@@ -24,6 +24,8 @@ A research project using simulation studies to model the supply of nephrologists
 - [CMS Data](https://data.cms.gov/)
 - [USRDS](https://usrds-adr.niddk.nih.gov/2024)
 - [A New System Dynamics Model of the U.S. Physician Workforce](https://www.rand.org/pubs/corporate_pubs/CPA2616-1.html)
+- [HRSA Workforce Projections](https://data.hrsa.gov/topics/health-workforce/workforce-projections)
+- [HRSA Workforce Projections--Background](https://bhw.hrsa.gov/data-research/projecting-health-workforce-supply-demand)
  
 
 # License 
