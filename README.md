@@ -8,6 +8,7 @@ A research project using simulation studies to model the supply of nephrologists
 - [{microsimulation}](https://github.com/mclements/microsimulation)
 - [{hesim}](https://hesim-dev.github.io/hesim/)
 - [{darthpack}](https://darth-git.github.io/darthpack/index.html)
+- [{simmer}](https://r-simmer.org/)
 
 # Links, References, and Supporting Material
 - [Introduction to {hesim} (CRAN)](https://cran.r-project.org/web/packages/hesim/vignettes/intro.html)
@@ -27,6 +28,14 @@ A research project using simulation studies to model the supply of nephrologists
 - [HRSA Workforce Projections](https://data.hrsa.gov/topics/health-workforce/workforce-projections)
 - [HRSA Workforce Projections--Background](https://bhw.hrsa.gov/data-research/projecting-health-workforce-supply-demand)
 - [Decision Analysis in R for Technologies in Health (DARTH) ](https://github.com/DARTH-git)
+  - [Microsimulation in R: A Tutorial](https://github.com/DARTH-git/Microsimulation-tutorial)
+  - [Value of Information Analysis Code](https://github.com/feralaes/VOI-Gaussian-Approximation)
+  - [{dampack}](https://github.com/DARTH-git/dampack)
+  - [A Tutorial on Time-Dependent Cohort State-Transition Models in R Using a Cost-Effectiveness Analysis Example](https://journals.sagepub.com/doi/full/10.1177/0272989X221121747)
+  - [An Introductory Tutorial on Cohort State-Transition Models in R Using a Cost-Effectiveness Analysis Example](https://journals.sagepub.com/doi/full/10.1177/0272989X221103163)
+  - [A Multidimensional Array Representation of State-Transition Model Dynamics](https://journals.sagepub.com/doi/10.1177/0272989X19893973)
+  - [A Need forChange! ACoding Framework forImproving Transparency inDecision Modeling ](https://pmc.ncbi.nlm.nih.gov/articles/PMC6871515/pdf/nihms-1540509.pdf)
+  - 
  
 
 # License 
