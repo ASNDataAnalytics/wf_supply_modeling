@@ -34,8 +34,7 @@ A research project using simulation studies to model the supply of nephrologists
   - [A Tutorial on Time-Dependent Cohort State-Transition Models in R Using a Cost-Effectiveness Analysis Example](https://journals.sagepub.com/doi/full/10.1177/0272989X221121747)
   - [An Introductory Tutorial on Cohort State-Transition Models in R Using a Cost-Effectiveness Analysis Example](https://journals.sagepub.com/doi/full/10.1177/0272989X221103163)
   - [A Multidimensional Array Representation of State-Transition Model Dynamics](https://journals.sagepub.com/doi/10.1177/0272989X19893973)
-  - [A Need forChange! ACoding Framework forImproving Transparency inDecision Modeling ](https://pmc.ncbi.nlm.nih.gov/articles/PMC6871515/pdf/nihms-1540509.pdf)
-  - 
+  - [A Need for Change! A Coding Framework for Improving Transparency in Decision Modeling](https://pmc.ncbi.nlm.nih.gov/articles/PMC6871515/pdf/nihms-1540509.pdf)
  
 
 # License 
