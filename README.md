@@ -36,6 +36,7 @@ A research project using simulation studies to model the supply of nephrologists
   - [A Multidimensional Array Representation of State-Transition Model Dynamics](https://journals.sagepub.com/doi/10.1177/0272989X19893973)
   - [A Need for Change! A Coding Framework for Improving Transparency in Decision Modeling](https://pmc.ncbi.nlm.nih.gov/articles/PMC6871515/pdf/nihms-1540509.pdf)
 - [Strategic workforce planning in health and social care – an international perspective: A scoping review](https://www.sciencedirect.com/science/article/pii/S0168851023001124#fig0002)
+- [Pediatric Subspecialty U.S. State and County Maps](https://www.abp.org/dashboards/pediatric-subspecialty-us-state-and-county-maps)
  
 
 # License 
