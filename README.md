@@ -38,7 +38,8 @@ A research project using simulation studies to model the supply of nephrologists
 - [Strategic workforce planning in health and social care – an international perspective: A scoping review](https://www.sciencedirect.com/science/article/pii/S0168851023001124#fig0002)
 - [Pediatric Subspecialty U.S. State and County Maps](https://www.abp.org/dashboards/pediatric-subspecialty-us-state-and-county-maps)
 - [Signposting Health Economic Packages in R for Decision Modelling (SHEPRD)](https://hermes-sheprd.netlify.app/)
- 
+- [Weldon Center Natioanl Population Projections](https://www.coopercenter.org/national-population-projections)
+- [National 50-state population projections: 2030, 2040, 2050](https://www.coopercenter.org/research/national-50-state-population-projections-2030-2040-2050)
 
 # License 
 
