@@ -1,0 +1,422 @@
+---
+title: "Sick-Sicker Microsimulation"
+format: html
+---
+
+```{r}
+#| label: packages
+
+require(asn)
+require(tidyverse)
+```
+
+## Walkthrough of Sick-Sicker Model
+
+From: Microsimulation Modeling for Health Decision Sciences Using R: A Tutorial
+
+-   <https://doi.org/10.1177/0272989X18754513>
+
+-   <https://github.com/DARTH-git/Microsimulation-tutorial>
+
+```{mermaid}
+flowchart LR
+  A[Initial Health State] --> B(Assign Cost & Health Outcome Value)
+  B --> C{P Transition}
+  C --> D[Same Health State]
+  C --> E[New Health State]
+  E --> F[Calculate Cost]
+  D --> F
+```
+
+## I. Toy Model
+
+### Variables
+
+$nt$ = Number of time cycles\
+$t$ = Current cycle (0 to $nt$)\
+$cl$ = Cycle length (e.g., years)\
+$ni$ = Number individuals\
+$i$ = Specific individual\
+$nx$ = Number of individual characteristics (e.g., age, sex)\
+$ns$ = Number of Health states (e.g., healthy, sick, sicker, dead)\
+$n$ = Vector of state names (i.e., healthy, sick, sicker, dead)\
+$p$ = $ns$ vector of transition probabilities for individual $i$ at end of cycle $t$\
+$M$ = $ni \times (nt + 1)$ matrix capturing health states of all individuals for all cycles\
+$X$ = $ni \times (nt + 1) \times nx$ tensor of individuals characteristics for all cycles\
+$Probs(M_i,X_i), Costs(M_i,X_i), Effs(M_i,X_i,cl)$ = Functions assigning inividual-specific probabilities, cost and health outcome values conditional on $Mi, Xi, cl$\
+$C$ = $ni \times (nt + 1)$ matrix capturing costs of all individuals for all cycles\
+$E$ = $ni \times (nt + 1)$ matrix capturing health outcomes of all individuals for all cycles\
+$dwc$ = $nt$ vector of discount weights for costs where $dwc=\frac{1}{(1+dc)^t}$\
+$dwe$ = $nt$ vector of discount weights for health outcomes where $dwe=\frac{1}{(1+de)^t}$\
+$tc$ = $ni$ vector of total discounted costs for all individuals\
+$te$ = $ni$ vector of total discounted health outcomes for all individuals
+
+```{r}
+#| eval: false
+
+ni <- 10                             # Number individuals    
+ns <- 4                              # Number health states
+dc <- 0.03                           # Annual discount rate
+de <- 0.03                           # Annual discount rate
+nt <- 10                             # Number of time cycles
+cl <- 1                              # Cycle Length = 1 Year
+M1_vector <- "TK"                    # Initial Health States
+# p_vector <- "TK"                     # Vector of transistion probabilities
+M_matrix <-                          # health states of all individuals for all cycles
+  matrix(
+    nrow = ni,
+    ncol = ni + 1
+  ) 
+
+C_matrix <-                          # costs of all individuals for all cycles
+  matrix(
+    nrow = ni,
+    ncol = ni + 1
+  ) 
+
+E_matrix <-                          # health outcomes of all individuals for all cycles
+  matrix(
+    nrow = ni,
+    ncol = ni + 1
+  ) 
+
+X_matrix <-                          # tensor of individuals characteristics for all cycles
+
+Costs <- function()
+Effs <- function()
+Probs <- function()
+
+n_vector <- 1:ns                     # vector of health states
+
+dwc <-                               # cost discount weights
+  1 / (1 + dc)^(0:nt)
+
+dwe <-                               # health outcome discount weights
+  1 / (1 + de)^(0:nt)
+
+for (i in 1:ni) {
+  # Step 1: Initial State
+  M_matrix[i, 1] <- M1_vector[i]     # Initial Health State
+  C_matrix[i, 1] <-                  # Costs for individual at time 0
+    Costs(
+      M_matrix[i, 1], 
+      X_matrix[i, 1]
+    )
+  E_matrix[i, 1] <-                  # Health outcome for individual at time 0 
+    Effs(
+      M_matrix[i, 1], 
+      X_matrix[i, 1]
+    )
+
+    for (t in 1:nt) {
+  # Step 2: Calculate Transition Probabilities
+      p_vector <- 
+        Probs(
+          M_matrix[i, 1:t], 
+          X_matrix[i, 1:t]
+        )
+  # Step 3: Sample health state at t + 1 and store i t in M_matrix
+      M_matrix[i, t + 1] <-
+        sample(n, prob = p_vector, size = 1) 
+        
+  # Step 4: Calculate cost and health state at t + 1
+      C_matrix[i, t + 1] <-
+        Costs(
+          M_matrix[i, 1:t + 1],
+          X_matrix[i, 1:t + 1] 
+        ) 
+      
+      E_matrix[i, t + 1] <-
+        Effs(
+          M_matrix[i, 1:t + 1],
+          X_matrix[i, 1:t + 1],
+          cl 
+        ) 
+    }
+  }
+
+  # Step 5: Calculate Totals
+  
+tc <- C_matrix %*% dwc
+te <- E_matrix %*% dwe  
+```
+
+## II. Sick-Sicker Model
+
+| Parameter                                   | Name      | Value        |
+|---------------------------------------------|-----------|--------------|
+| Time horizon *(nt)*                         | `nt`      | 30 years     |
+| Cycle length *(cl)*                         | `cl`      | 1 year       |
+| Number of Simulated Individuals *(ni)*      | `ni`      | 100,000      |
+| Number of health states *(vn)*               | `vn`      | H, S1, S2, D |
+| Annual discount rate (costs/QALY) *(dc/de)* | `dc/de`   | 0.03         |
+| *P(*H\>S1)                                  | `p_H_S1`  | 0.15         |
+| *P*(S1\>H)                                  | `p_S1_H`  | 0.5          |
+| *P*(S1\>S2)                                 | `p_S1_S2` | 0.105        |
+| *P*(H\>D)                                   | `p_H_D`   | 0.005        |
+| RR(D in S1 v H)                             | `rr_D-S1` | 3            |
+| RR(D in S2 v H)                             | `rr_D-S2` | 10           |
+| Cost(H)                                     | `c_H`     | \$2,000      |
+| Cost(S1)                                    | `c_S1`    | \$4,000      |
+| Cost(S2)                                    | `c_S2`    | \$15,000     |
+| Cost(Treatment per S1/S2 individual)        | `c_Trt`   | \$12,000     |
+| Utility Weight(H)                           | `u_H`     | 1            |
+| Utility Weight(S1)                          | `u_S1`    | 0.75         |
+| Utility Weight(S2)                          | `u_S2`    | 0.5          |
+| Utility Weight(Treated in S1)               | `u_Trt`   | 0.95         |
+| Treatment Effect Modifier at Baseline       | `v_x`     | U(0.95,1.05) |
+| Utility Decrement each addtl. S1/S2 Year    | `ru_S1S2` | 0.03         |
+| Mortality Increase each addtl. S1/S2 Year   | `rp_S1S2` | 0.2          |
+
+### II.1 Microsimulation Implementation of Sick-Sicker
+
+#### II.1.A Variables
+
+```{r}
+#| label: Variables
+
+ni <- 100000                                        # Number of Simulated Individuals (ni)
+nt <- 30                                            # Time horizon (nt)
+vn <- c("H", "S1", "S2", "D")                       # Vector of health states (vn)
+n_s <- length(vn)                                   # Number of health states
+v_M1 <- rep("H", ni)                                # Everyone starts in healthy state
+dc <- 0.03                                          # Annual discount rate (costs) (dc)
+de <- 0.03                                          # Annual discount rate (QALY) (de)
+v_Trt <- c("No Treatment", "Treatment")             # Interventions
+
+# Transition Probabilities
+
+p_H_D <- 0.005                                      # Probability to die when healthy P(H>D)
+p_H_S1 <- 0.15                                      # Probability to become sick when healthy P(H>S1)
+p_S1_H <- 0.5                                       # Probability to become healthy when sick P(S1>H)
+p_S1_S2 <- 0.105                                    # Probability to become sicker when sick P(S1>S2)
+rr_D_S1 <- 3                                        # Rate Ratio death sick v healthy RR(D in S1 v H)
+rr_D_S2 <- 10                                       # Rate Ratio death sicker v healthy RR(D in S2 v H)
+r_H_D <- -log(1 - p_H_D)                            # Rate of death when healthy
+r_S1_D <- rr_D_S1 * r_H_D                           # Rate of death when sick
+r_S2_D <- rr_D_S2 * r_H_D                           # Rate of death when sicker
+p_S1_D <- 1 - exp(-r_S1_D)                          # Probability to die when sick
+p_S2_D <- 1 - exp(-r_S2_D)                          # Probability to die when sicker
+
+# Cost and utility inputs
+
+c_H <- 2000                                         # Cost of being healthy Cost(H)
+c_S1 <- 4000                                        # Cost of being sick Cost(S1)
+c_S2 <- 15000                                       # Cost of being sicker Cost(S2)
+c_Trt <- 12000                                      # Cost(Treatment per S1/S2 individual)
+
+
+u_H <- 1                                            # Utility when healthy Utility Weight(H)
+u_S1 <- 0.75                                        # Utility when sick Utility Weight(S1)
+u_S2 <- 0.5                                         # Utility when sicker Utility Weight(S2)
+u_Trt <- 0.95                                   # Utility sick and treated Utility Weight(Treated in S1)
+
+```
+
+#### II.1.A `probs` Function
+
+```{r}
+
+probs <- function(
+  M_it # health state for individual i at cycle t
+) {
+  
+  v_p_it <- rep(NA, n_s) # Create vector of state transition probabilities
+  names(v_p_it) <- vn # Name of health states
+
+  # Update vector with appropriate probabilities
+
+  v_p_it[M_it == "H"] <- c(1 - p_H_S1 - p_H_D, p_H_S1, 0, p_H_D)
+  v_p_it[M_it == "S1"] <- c(p_S1_H, 1 - p_S1_H - p_S1_S2 - p_S1_D, p_S1_S2, p_S1_D)
+  v_p_it[M_it == "S2"] <- c(0, 0, 1 - p_S2_D, p_S2_D)
+  v_p_it[M_it == "D"] <- c(0, 0, 0, 1)
+
+  if_else(
+    sum(v_p_it) == 1,
+    return(v_p_it),
+    print("Probabilities do not sum to 1")
+  )
+}
+```
+
+#### II.1.B `Costs` Function
+
+```{r}
+
+costs <- function(M_it, Trt = FALSE){
+  
+  c_it <- 0 # Default Cost
+  c_it[M_it == "H"] <- c_H
+  c_it[M_it == "S1"] <- c_S1 + c_Trt * Trt
+  c_it[M_it == "S2"] <- c_S2 + c_Trt * Trt
+
+  return(c_it)
+}
+```
+
+#### II.1.C `effs` Function
+
+```{r}
+
+effs <- function(M_it, Trt = FALSE, cl = 1){
+
+  u_it <- 0 # Default utility is 0
+  u_it[M_it == "H"] <- u_H
+  u_it[M_it == "S1"] <- Trt * u_Trt + (1 - Trt) * u_S1
+  u_it[M_it == "S2"] <- u_S2
+  qalys <- u_it * cl
+  return(qalys)
+}
+
+```
+
+#### II.1.D `microsim` Function
+
+
+```{r}
+#| eval: false
+
+microsim <- function(
+  v_M1, # Everyone starts in healthy state
+  ni,   # Number of Simulated Individuals (ni)
+  nt,   # Time horizon (nt)
+  vn,   # Vector of health states (vn)
+  dc,   # Annual discount rate (costs) (dc)
+  de,   # Annual discount rate (QALY) (de)
+  TR = TRUE, # Include microsimulation trace
+  TS = TRUE, # Include matrix of transitions between states
+  Trt = FALSE, # ni receiving treatment?
+  seed = 1 # set seed
+) {
+
+  # Vectors of Discount Weights 
+
+  v_dw_cost <- 1 / (1 + dc) ^ (0:nt)
+  v_dw_effs <- 1 / (1 + de) ^ (0:nt)
+
+  # Matrices for results
+
+  ## Health States
+  M_matrix <- 
+    matrix(
+      nrow = ni,
+      ncol = nt + 1,
+      dimnames = list(
+        paste0("ind", "_", 1:ni),
+        paste0("cycle", "_", 0:nt)
+      )
+    )
+  
+  ## Costs
+  C_matrix <- 
+    matrix(
+      nrow = ni,
+      ncol = nt + 1,
+      dimnames = list(
+        paste0("ind", "_", 1:ni),
+        paste0("cycle", "_", 0:nt)
+      )
+    )
+  
+  ## Effects/QALYs
+  E_matrix <- 
+    matrix(
+      nrow = ni,
+      ncol = nt + 1,
+      dimnames = list(
+        paste0("ind", "_", 1:ni),
+        paste0("cycle", "_", 0:nt)
+      )
+    )
+
+  # Initialize Health State
+
+  M_matrix[ , 1] <- v_M1
+
+  for (i in 1:ni) {
+    set.seed(seed + i)
+    C_matrix[i, 1] <- costs(M_it = M_matrix[i, 1], Trt = Trt)
+    E_matrix[i, 1] <- effs(M_it = M_matrix[i, 1], Trt = Trt)
+
+    for (t in 1:nt) {
+      v_p <- probs(M_matrix[i, t])
+
+      M_matrix[i, t + 1] <- sample(vn, prob = v_p, size = 1)
+      
+      C_matrix[i, t + 1] <- costs(M_it = M_matrix[i, t +1], Trt = Trt)
+
+      E_matrix[i, t + 1] <- effs(M_it = M_matrix[i, t + 1], Trt = Trt)
+
+      }
+
+      if(i / 100 == round(i/000, 0)) {
+        cat("\r", paste(i/ni * 100, "% done", sep = " "))
+      }
+
+    }
+
+  # Calculated discount-weighted costs
+
+  total_cost <- C_matrix %*% v_dw_cost
+  total_effects <- E_matrix %*% v_dw_effs
+
+  mean_total_cost <- mean(total_cost)
+  mean_total_effects <- mean(total_effects)
+
+  # Generate Matrix of Transitions
+
+  if (TS == TRUE) {
+    
+    TS <- paste(M_matrix, cbind(M_matrix[, -1], "D"), sep = "->")
+    TS <- matrix(TS, nrow = ni)
+    rownames(TS) <- paste0("ind", "_", 1:ni)
+    colnames(TS) <- paste0("cycle", "_", 0:nt)
+  
+  } else {
+    TS <- NULL
+  }
+
+  # Generate Trace Matrix
+  
+  if (TR == TRUE) {
+    
+    TR <- t(apply(M_matrix, 2, function(x) table(factor(x, levels = vn, ordered = TRUE))))
+    TR <- TR / ni
+    colnames(TR) <- vn
+    rownames(TR) <- paste0("cycle", "_", 0:nt)
+  } else {
+    TR <- NULL
+  }
+    
+  results <-
+    list(
+      M_matrix = M_matrix,
+      C_matrix = C_matrix,
+      E_matrix = E_matrix,
+      total_cost = total_cost,
+      total_effects = total_effects,
+      mean_total_cost = mean_total_cost,
+      mean_total_effects = mean_total_effects,
+      TS = TS,
+      TR = TR
+    )  
+
+  return(results) 
+
+}
+```
+
+### II.2 Run Model
+
+```{r}
+sim_no_trt <- 
+  microsim(
+    v_M1 = v_M1,
+    ni = ni,
+    nt = nt,
+    vn  = vn, 
+    dc = dc, 
+    de = de, 
+    Trt = FALSE
+  )
+```

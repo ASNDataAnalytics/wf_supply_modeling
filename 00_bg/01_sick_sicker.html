@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.20">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Sick-Sicker Microsimulation</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="01_sick_sicker_files/libs/clipboard/clipboard.min.js"></script>
+<script src="01_sick_sicker_files/libs/quarto-html/quarto.js"></script>
+<script src="01_sick_sicker_files/libs/quarto-html/popper.min.js"></script>
+<script src="01_sick_sicker_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="01_sick_sicker_files/libs/quarto-html/anchor.min.js"></script>
+<link href="01_sick_sicker_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="01_sick_sicker_files/libs/quarto-html/quarto-syntax-highlighting-018089954d508eae8a473f0b7f0491f0.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="01_sick_sicker_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="01_sick_sicker_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="01_sick_sicker_files/libs/bootstrap/bootstrap-1addff598016a11b28a5906c0767db6d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="01_sick_sicker_files/libs/quarto-diagram/mermaid.min.js"></script>
+<script src="01_sick_sicker_files/libs/quarto-diagram/mermaid-init.js"></script>
+<link href="01_sick_sicker_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Sick-Sicker Microsimulation</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span>(asn)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: asn</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: tidyverse</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.5
+✔ forcats   1.0.0     ✔ stringr   1.5.1
+✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+✔ lubridate 1.9.3     ✔ tidyr     1.3.1
+✔ purrr     1.0.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter()     masks stats::filter()
+✖ dplyr::lag()        masks stats::lag()
+✖ dplyr::select_all() masks asn::select_all()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+</div>
+<section id="walkthrough-of-sick-sicker-model" class="level2">
+<h2 class="anchored" data-anchor-id="walkthrough-of-sick-sicker-model">Walkthrough of Sick-Sicker Model</h2>
+<p>From: Microsimulation Modeling for Health Decision Sciences Using R: A Tutorial</p>
+<ul>
+<li><p><a href="https://doi.org/10.1177/0272989X18754513" class="uri">https://doi.org/10.1177/0272989X18754513</a></p></li>
+<li><p><a href="https://github.com/DARTH-git/Microsimulation-tutorial" class="uri">https://github.com/DARTH-git/Microsimulation-tutorial</a></p></li>
+</ul>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+  A[Initial Health State] --&gt; B(Assign Cost &amp; Health Outcome Value)
+  B --&gt; C{P Transition}
+  C --&gt; D[Same Health State]
+  C --&gt; E[New Health State]
+  E --&gt; F[Calculate Cost]
+  D --&gt; F
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</section>
+<section id="i.-toy-model" class="level2">
+<h2 class="anchored" data-anchor-id="i.-toy-model">I. Toy Model</h2>
+<section id="variables" class="level3">
+<h3 class="anchored" data-anchor-id="variables">Variables</h3>
+<p><span class="math inline">\(nt\)</span> = Number of time cycles<br>
+<span class="math inline">\(t\)</span> = Current cycle (0 to <span class="math inline">\(nt\)</span>)<br>
+<span class="math inline">\(cl\)</span> = Cycle length (e.g., years)<br>
+<span class="math inline">\(ni\)</span> = Number individuals<br>
+<span class="math inline">\(i\)</span> = Specific individual<br>
+<span class="math inline">\(nx\)</span> = Number of individual characteristics (e.g., age, sex)<br>
+<span class="math inline">\(ns\)</span> = Number of Health states (e.g., healthy, sick, sicker, dead)<br>
+<span class="math inline">\(n\)</span> = Vector of state names (i.e., healthy, sick, sicker, dead)<br>
+<span class="math inline">\(p\)</span> = <span class="math inline">\(ns\)</span> vector of transition probabilities for individual <span class="math inline">\(i\)</span> at end of cycle <span class="math inline">\(t\)</span><br>
+<span class="math inline">\(M\)</span> = <span class="math inline">\(ni \times (nt + 1)\)</span> matrix capturing health states of all individuals for all cycles<br>
+<span class="math inline">\(X\)</span> = <span class="math inline">\(ni \times (nt + 1) \times nx\)</span> tensor of individuals characteristics for all cycles<br>
+<span class="math inline">\(Probs(M_i,X_i), Costs(M_i,X_i), Effs(M_i,X_i,cl)\)</span> = Functions assigning inividual-specific probabilities, cost and health outcome values conditional on <span class="math inline">\(Mi, Xi, cl\)</span><br>
+<span class="math inline">\(C\)</span> = <span class="math inline">\(ni \times (nt + 1)\)</span> matrix capturing costs of all individuals for all cycles<br>
+<span class="math inline">\(E\)</span> = <span class="math inline">\(ni \times (nt + 1)\)</span> matrix capturing health outcomes of all individuals for all cycles<br>
+<span class="math inline">\(dwc\)</span> = <span class="math inline">\(nt\)</span> vector of discount weights for costs where <span class="math inline">\(dwc=\frac{1}{(1+dc)^t}\)</span><br>
+<span class="math inline">\(dwe\)</span> = <span class="math inline">\(nt\)</span> vector of discount weights for health outcomes where <span class="math inline">\(dwe=\frac{1}{(1+de)^t}\)</span><br>
+<span class="math inline">\(tc\)</span> = <span class="math inline">\(ni\)</span> vector of total discounted costs for all individuals<br>
+<span class="math inline">\(te\)</span> = <span class="math inline">\(ni\)</span> vector of total discounted health outcomes for all individuals</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ni <span class="ot">&lt;-</span> <span class="dv">10</span>                             <span class="co"># Number individuals    </span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>ns <span class="ot">&lt;-</span> <span class="dv">4</span>                              <span class="co"># Number health states</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>dc <span class="ot">&lt;-</span> <span class="fl">0.03</span>                           <span class="co"># Annual discount rate</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>de <span class="ot">&lt;-</span> <span class="fl">0.03</span>                           <span class="co"># Annual discount rate</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>nt <span class="ot">&lt;-</span> <span class="dv">10</span>                             <span class="co"># Number of time cycles</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">&lt;-</span> <span class="dv">1</span>                              <span class="co"># Cycle Length = 1 Year</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>M1_vector <span class="ot">&lt;-</span> <span class="st">"TK"</span>                    <span class="co"># Initial Health States</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># p_vector &lt;- "TK"                     # Vector of transistion probabilities</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>M_matrix <span class="ot">&lt;-</span>                          <span class="co"># health states of all individuals for all cycles</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> ni,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> ni <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  ) </span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>C_matrix <span class="ot">&lt;-</span>                          <span class="co"># costs of all individuals for all cycles</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> ni,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> ni <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  ) </span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>E_matrix <span class="ot">&lt;-</span>                          <span class="co"># health outcomes of all individuals for all cycles</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> ni,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> ni <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  ) </span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>X_matrix <span class="ot">&lt;-</span>                          <span class="co"># tensor of individuals characteristics for all cycles</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>Costs <span class="ot">&lt;-</span> <span class="cf">function</span>()</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>Effs <span class="ot">&lt;-</span> <span class="cf">function</span>()</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>Probs <span class="ot">&lt;-</span> <span class="cf">function</span>()</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>n_vector <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>ns                     <span class="co"># vector of health states</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>dwc <span class="ot">&lt;-</span>                               <span class="co"># cost discount weights</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> dc)<span class="sc">^</span>(<span class="dv">0</span><span class="sc">:</span>nt)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>dwe <span class="ot">&lt;-</span>                               <span class="co"># health outcome discount weights</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> de)<span class="sc">^</span>(<span class="dv">0</span><span class="sc">:</span>nt)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>ni) {</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 1: Initial State</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  M_matrix[i, <span class="dv">1</span>] <span class="ot">&lt;-</span> M1_vector[i]     <span class="co"># Initial Health State</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>  C_matrix[i, <span class="dv">1</span>] <span class="ot">&lt;-</span>                  <span class="co"># Costs for individual at time 0</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">Costs</span>(</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>      M_matrix[i, <span class="dv">1</span>], </span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>      X_matrix[i, <span class="dv">1</span>]</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>  E_matrix[i, <span class="dv">1</span>] <span class="ot">&lt;-</span>                  <span class="co"># Health outcome for individual at time 0 </span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">Effs</span>(</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>      M_matrix[i, <span class="dv">1</span>], </span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>      X_matrix[i, <span class="dv">1</span>]</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nt) {</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 2: Calculate Transition Probabilities</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>      p_vector <span class="ot">&lt;-</span> </span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>        <span class="fu">Probs</span>(</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>          M_matrix[i, <span class="dv">1</span><span class="sc">:</span>t], </span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>          X_matrix[i, <span class="dv">1</span><span class="sc">:</span>t]</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 3: Sample health state at t + 1 and store i t in M_matrix</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>      M_matrix[i, t <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>        <span class="fu">sample</span>(n, <span class="at">prob =</span> p_vector, <span class="at">size =</span> <span class="dv">1</span>) </span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 4: Calculate cost and health state at t + 1</span></span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>      C_matrix[i, t <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>        <span class="fu">Costs</span>(</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>          M_matrix[i, <span class="dv">1</span><span class="sc">:</span>t <span class="sc">+</span> <span class="dv">1</span>],</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>          X_matrix[i, <span class="dv">1</span><span class="sc">:</span>t <span class="sc">+</span> <span class="dv">1</span>] </span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>        ) </span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>      E_matrix[i, t <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span></span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>        <span class="fu">Effs</span>(</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>          M_matrix[i, <span class="dv">1</span><span class="sc">:</span>t <span class="sc">+</span> <span class="dv">1</span>],</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>          X_matrix[i, <span class="dv">1</span><span class="sc">:</span>t <span class="sc">+</span> <span class="dv">1</span>],</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>          cl </span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>        ) </span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 5: Calculate Totals</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>tc <span class="ot">&lt;-</span> C_matrix <span class="sc">%*%</span> dwc</span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>te <span class="ot">&lt;-</span> E_matrix <span class="sc">%*%</span> dwe  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="ii.-sick-sicker-model" class="level2">
+<h2 class="anchored" data-anchor-id="ii.-sick-sicker-model">II. Sick-Sicker Model</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 64%">
+<col style="width: 15%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Time horizon <em>(nt)</em></td>
+<td><code>nt</code></td>
+<td>30 years</td>
+</tr>
+<tr class="even">
+<td>Cycle length <em>(cl)</em></td>
+<td><code>cl</code></td>
+<td>1 year</td>
+</tr>
+<tr class="odd">
+<td>Number of Simulated Individuals <em>(ni)</em></td>
+<td><code>ni</code></td>
+<td>100,000</td>
+</tr>
+<tr class="even">
+<td>Number of health states <em>(vn)</em></td>
+<td><code>vn</code></td>
+<td>H, S1, S2, D</td>
+</tr>
+<tr class="odd">
+<td>Annual discount rate (costs/QALY) <em>(dc/de)</em></td>
+<td><code>dc/de</code></td>
+<td>0.03</td>
+</tr>
+<tr class="even">
+<td><em>P(</em>H&gt;S1)</td>
+<td><code>p_H_S1</code></td>
+<td>0.15</td>
+</tr>
+<tr class="odd">
+<td><em>P</em>(S1&gt;H)</td>
+<td><code>p_S1_H</code></td>
+<td>0.5</td>
+</tr>
+<tr class="even">
+<td><em>P</em>(S1&gt;S2)</td>
+<td><code>p_S1_S2</code></td>
+<td>0.105</td>
+</tr>
+<tr class="odd">
+<td><em>P</em>(H&gt;D)</td>
+<td><code>p_H_D</code></td>
+<td>0.005</td>
+</tr>
+<tr class="even">
+<td>RR(D in S1 v H)</td>
+<td><code>rr_D-S1</code></td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>RR(D in S2 v H)</td>
+<td><code>rr_D-S2</code></td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>Cost(H)</td>
+<td><code>c_H</code></td>
+<td>$2,000</td>
+</tr>
+<tr class="odd">
+<td>Cost(S1)</td>
+<td><code>c_S1</code></td>
+<td>$4,000</td>
+</tr>
+<tr class="even">
+<td>Cost(S2)</td>
+<td><code>c_S2</code></td>
+<td>$15,000</td>
+</tr>
+<tr class="odd">
+<td>Cost(Treatment per S1/S2 individual)</td>
+<td><code>c_Trt</code></td>
+<td>$12,000</td>
+</tr>
+<tr class="even">
+<td>Utility Weight(H)</td>
+<td><code>u_H</code></td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>Utility Weight(S1)</td>
+<td><code>u_S1</code></td>
+<td>0.75</td>
+</tr>
+<tr class="even">
+<td>Utility Weight(S2)</td>
+<td><code>u_S2</code></td>
+<td>0.5</td>
+</tr>
+<tr class="odd">
+<td>Utility Weight(Treated in S1)</td>
+<td><code>u_Trt</code></td>
+<td>0.95</td>
+</tr>
+<tr class="even">
+<td>Treatment Effect Modifier at Baseline</td>
+<td><code>v_x</code></td>
+<td>U(0.95,1.05)</td>
+</tr>
+<tr class="odd">
+<td>Utility Decrement each addtl. S1/S2 Year</td>
+<td><code>ru_S1S2</code></td>
+<td>0.03</td>
+</tr>
+<tr class="even">
+<td>Mortality Increase each addtl. S1/S2 Year</td>
+<td><code>rp_S1S2</code></td>
+<td>0.2</td>
+</tr>
+</tbody>
+</table>
+<section id="ii.1-microsimulation-implementation-of-sick-sicker" class="level3">
+<h3 class="anchored" data-anchor-id="ii.1-microsimulation-implementation-of-sick-sicker">II.1 Microsimulation Implementation of Sick-Sicker</h3>
+<section id="ii.1.a-variables" class="level4">
+<h4 class="anchored" data-anchor-id="ii.1.a-variables">II.1.A Variables</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ni <span class="ot">&lt;-</span> <span class="dv">100000</span>                                        <span class="co"># Number of Simulated Individuals (ni)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>nt <span class="ot">&lt;-</span> <span class="dv">30</span>                                            <span class="co"># Time horizon (nt)</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>vn <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"H"</span>, <span class="st">"S1"</span>, <span class="st">"S2"</span>, <span class="st">"D"</span>)                       <span class="co"># Vector of health states (vn)</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>n_s <span class="ot">&lt;-</span> <span class="fu">length</span>(vn)                                   <span class="co"># Number of health states</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>v_M1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="st">"H"</span>, ni)                                <span class="co"># Everyone starts in healthy state</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>dc <span class="ot">&lt;-</span> <span class="fl">0.03</span>                                          <span class="co"># Annual discount rate (costs) (dc)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>de <span class="ot">&lt;-</span> <span class="fl">0.03</span>                                          <span class="co"># Annual discount rate (QALY) (de)</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>v_Trt <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"No Treatment"</span>, <span class="st">"Treatment"</span>)             <span class="co"># Interventions</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Transition Probabilities</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>p_H_D <span class="ot">&lt;-</span> <span class="fl">0.005</span>                                      <span class="co"># Probability to die when healthy P(H&gt;D)</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>p_H_S1 <span class="ot">&lt;-</span> <span class="fl">0.15</span>                                      <span class="co"># Probability to become sick when healthy P(H&gt;S1)</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>p_S1_H <span class="ot">&lt;-</span> <span class="fl">0.5</span>                                       <span class="co"># Probability to become healthy when sick P(S1&gt;H)</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>p_S1_S2 <span class="ot">&lt;-</span> <span class="fl">0.105</span>                                    <span class="co"># Probability to become sicker when sick P(S1&gt;S2)</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>rr_D_S1 <span class="ot">&lt;-</span> <span class="dv">3</span>                                        <span class="co"># Rate Ratio death sick v healthy RR(D in S1 v H)</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>rr_D_S2 <span class="ot">&lt;-</span> <span class="dv">10</span>                                       <span class="co"># Rate Ratio death sicker v healthy RR(D in S2 v H)</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>r_H_D <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> p_H_D)                            <span class="co"># Rate of death when healthy</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>r_S1_D <span class="ot">&lt;-</span> rr_D_S1 <span class="sc">*</span> r_H_D                           <span class="co"># Rate of death when sick</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>r_S2_D <span class="ot">&lt;-</span> rr_D_S2 <span class="sc">*</span> r_H_D                           <span class="co"># Rate of death when sicker</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>p_S1_D <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">exp</span>(<span class="sc">-</span>r_S1_D)                          <span class="co"># Probability to die when sick</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>p_S2_D <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">exp</span>(<span class="sc">-</span>r_S2_D)                          <span class="co"># Probability to die when sicker</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Cost and utility inputs</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>c_H <span class="ot">&lt;-</span> <span class="dv">2000</span>                                         <span class="co"># Cost of being healthy Cost(H)</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>c_S1 <span class="ot">&lt;-</span> <span class="dv">4000</span>                                        <span class="co"># Cost of being sick Cost(S1)</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>c_S2 <span class="ot">&lt;-</span> <span class="dv">15000</span>                                       <span class="co"># Cost of being sicker Cost(S2)</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>c_Trt <span class="ot">&lt;-</span> <span class="dv">12000</span>                                      <span class="co"># Cost(Treatment per S1/S2 individual)</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>u_H <span class="ot">&lt;-</span> <span class="dv">1</span>                                            <span class="co"># Utility when healthy Utility Weight(H)</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>u_S1 <span class="ot">&lt;-</span> <span class="fl">0.75</span>                                        <span class="co"># Utility when sick Utility Weight(S1)</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>u_S2 <span class="ot">&lt;-</span> <span class="fl">0.5</span>                                         <span class="co"># Utility when sicker Utility Weight(S2)</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>u_Trt <span class="ot">&lt;-</span> <span class="fl">0.95</span>                                   <span class="co"># Utility sick and treated Utility Weight(Treated in S1)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="ii.1.a-probs-function" class="level4">
+<h4 class="anchored" data-anchor-id="ii.1.a-probs-function">II.1.A <code>probs</code> Function</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>probs <span class="ot">&lt;-</span> <span class="cf">function</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  M_it <span class="co"># health state for individual i at cycle t</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  v_p_it <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_s) <span class="co"># Create vector of state transition probabilities</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(v_p_it) <span class="ot">&lt;-</span> vn <span class="co"># Name of health states</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Update vector with appropriate probabilities</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  v_p_it[M_it <span class="sc">==</span> <span class="st">"H"</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">-</span> p_H_S1 <span class="sc">-</span> p_H_D, p_H_S1, <span class="dv">0</span>, p_H_D)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  v_p_it[M_it <span class="sc">==</span> <span class="st">"S1"</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(p_S1_H, <span class="dv">1</span> <span class="sc">-</span> p_S1_H <span class="sc">-</span> p_S1_S2 <span class="sc">-</span> p_S1_D, p_S1_S2, p_S1_D)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  v_p_it[M_it <span class="sc">==</span> <span class="st">"S2"</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span> <span class="sc">-</span> p_S2_D, p_S2_D)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  v_p_it[M_it <span class="sc">==</span> <span class="st">"D"</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">if_else</span>(</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(v_p_it) <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(v_p_it),</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">"Probabilities do not sum to 1"</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="ii.1.b-costs-function" class="level4">
+<h4 class="anchored" data-anchor-id="ii.1.b-costs-function">II.1.B <code>Costs</code> Function</h4>
+</section>
+<section id="ii.1.c-effs-function" class="level4">
+<h4 class="anchored" data-anchor-id="ii.1.c-effs-function">II.1.C <code>Effs</code> Function</h4>
+</section>
+<section id="ii.1.d-microsim-function" class="level4">
+<h4 class="anchored" data-anchor-id="ii.1.d-microsim-function">II.1.D <code>microsim</code> Function</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>microsim <span class="ot">&lt;-</span> <span class="cf">function</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  v_M1, <span class="co"># Everyone starts in healthy state</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  ni,   <span class="co"># Number of Simulated Individuals (ni)</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  nt,   <span class="co"># Time horizon (nt)</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  vn,   <span class="co"># Vector of health states (vn)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  dc,   <span class="co"># Annual discount rate (costs) (dc)</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  de,   <span class="co"># Annual discount rate (QALY) (de)</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">TR =</span> <span class="cn">TRUE</span>, <span class="co"># Include microsimulation trace</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">TS =</span> <span class="cn">TRUE</span>, <span class="co"># Include matrix of transitions between states</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">Trt =</span> <span class="cn">FALSE</span>, <span class="co"># ni receiving treatment?</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">1</span> <span class="co"># set seed</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>) {</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
