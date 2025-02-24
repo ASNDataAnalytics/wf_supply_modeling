@@ -197,6 +197,8 @@ r_S1_D <- rr_D_S1 * r_H_D                           # Rate of death when sick
 r_S2_D <- rr_D_S2 * r_H_D                           # Rate of death when sicker
 p_S1_D <- 1 - exp(-r_S1_D)                          # Probability to die when sick
 p_S2_D <- 1 - exp(-r_S2_D)                          # Probability to die when sicker
+# ------------------ NEW for IV. Add Memory ------------------------------------------------------
+p_D_S1S2 <- 0.2                                     # Increased mortality risk each year in S1/S2
 
 # Cost and utility inputs
 
@@ -210,6 +212,9 @@ u_H <- 1                                            # Utility when healthy Utili
 u_S1 <- 0.75                                        # Utility when sick Utility Weight(S1)
 u_S2 <- 0.5                                         # Utility when sicker Utility Weight(S2)
 u_Trt <- 0.95                                   # Utility sick and treated Utility Weight(Treated in S1)
+# ------------------ NEW for IV. Add Memory ------------------------------------------------------
+v_init_x <- runif(ni, 0.95, 1.05)                    # Individuals' effect modifier at baseline
+u_decr_S1S2 <- 0.03                                 # Decreased utility with each year in S1/S2
 
 ```
 
@@ -437,7 +442,7 @@ sim_trt <- microsim(
 )
 ```
 
-### III. Visualize and tabulate results
+## III. Visualize and tabulate results
 
 ```{r}
 health_outcomes_no_trt <- 
@@ -485,7 +490,7 @@ health_outcomes_no_trt |>
   theme_asn()
 ```
 
-#### III.1 Incremental Costs, Effects, Costs/Effectiveness Ratio, and Monte Carlo Standard Error (MCSE)
+### III.1 Incremental Costs, Effects, Costs/Effectiveness Ratio, and Monte Carlo Standard Error (MCSE)
 
 ```{r}
 
@@ -634,4 +639,242 @@ sim_no_trt |>
     x = "QALYs"
   ) +
   theme_asn()
+```
+
+## IV. Add Memory
+
+### IV.1 New Vars
+
+```{r}
+#| eval: false
+
+v_init_x <- runif(ni, 0.95, 1.05)                   # Individuals' effect modifier at baseline
+p_D_S1S2 <- 0.2                                     # Increased mortality risk each year in S1/S2
+u_decr_S1S2 <- 0.03                                 # Decreased utility with each year in S1/S2
+
+```
+
+### IV.2 REVISED `microsim_memory` Function
+
+```{r}
+
+microsim_memory <- function(
+  v_M1, # Everyone starts in healthy state
+  ni,   # Number of Simulated Individuals (ni)
+  nt,   # Time horizon (nt)
+  vn,   # Vector of health states (vn)
+  # ------------------ NEW for IV. Add Memory ------------------------------------------------------
+  X = NULL, # vector or matrix of individual characteristics -> v_init_x
+  dc,   # Annual discount rate (costs) (dc)
+  de,   # Annual discount rate (QALY) (de)
+  TR = TRUE, # Include microsimulation trace
+  TS = TRUE, # Include matrix of transitions between states
+  Trt = FALSE, # ni receiving treatment?
+  seed = 1 # set seed
+) {
+
+  # Vectors of Discount Weights 
+
+  v_dw_cost <- 1 / (1 + dc) ^ (0:nt)
+  v_dw_effs <- 1 / (1 + de) ^ (0:nt)
+
+  # Matrices for results
+
+  ## Health States
+  M_matrix <- 
+    matrix(
+      nrow = ni,
+      ncol = nt + 1,
+      dimnames = list(
+        paste0("ind", "_", 1:ni),
+        paste0("cycle", "_", 0:nt)
+      )
+    )
+  
+  ## Costs
+  C_matrix <- 
+    matrix(
+      nrow = ni,
+      ncol = nt + 1,
+      dimnames = list(
+        paste0("ind", "_", 1:ni),
+        paste0("cycle", "_", 0:nt)
+      )
+    )
+  
+  ## Effects/QALYs
+  E_matrix <- 
+    matrix(
+      nrow = ni,
+      ncol = nt + 1,
+      dimnames = list(
+        paste0("ind", "_", 1:ni),
+        paste0("cycle", "_", 0:nt)
+      )
+    )
+
+  # Initialize Health State
+
+  M_matrix[ , 1] <- v_M1
+
+  for (i in 1:ni) {
+    set.seed(seed + i)
+# ------------------ NEW for IV. Add Memory ------------------------------------------------------    
+    # create the `dur` variable that stores the number of consecutive cycles the individual occupies either when sick or sicker
+    dur <- 0 # the individual start without history  
+
+    C_matrix[i, 1] <- costs(M_it = M_matrix[i, 1], Trt = Trt)
+    E_matrix[i, 1] <- effs(M_it = M_matrix[i, 1], dur, Trt = Trt, X = X[i])
+
+    for (t in 1:nt) {
+      v_p <- probs(M_matrix[i, t], dur = dur)
+
+      M_matrix[i, t + 1] <- sample(vn, prob = v_p, size = 1)
+      
+      C_matrix[i, t + 1] <- costs(M_it = M_matrix[i, t +1], Trt = Trt)
+
+      E_matrix[i, t + 1] <- effs(M_it = M_matrix[i, t + 1], dur, Trt = Trt, X = X[i])
+# ------------------ NEW for IV. Add Memory ------------------------------------------------------    
+      if (M_matrix[i, t + 1] == "S1" | M_matrix[i, t + 1] == "S2") {
+        dur <- dur + 1
+      } else {
+        dur <- 0
+      }
+
+      }
+
+      if(i / 100 == round(i/000, 0)) {
+        cat("\r", paste(i/ni * 100, "% done", sep = " "))
+      }
+
+    }
+
+  # Calculated discount-weighted costs
+
+  total_cost <- C_matrix %*% v_dw_cost
+  total_effects <- E_matrix %*% v_dw_effs
+
+  mean_total_cost <- mean(total_cost)
+  mean_total_effects <- mean(total_effects)
+
+  # Generate Matrix of Transitions
+
+  if (TS == TRUE) {
+    
+    TS <- paste(M_matrix, cbind(M_matrix[, -1], "D"), sep = "->")
+    TS <- matrix(TS, nrow = ni)
+    rownames(TS) <- paste0("ind", "_", 1:ni)
+    colnames(TS) <- paste0("cycle", "_", 0:nt)
+  
+  } else {
+    TS <- NULL
+  }
+
+  # Generate Trace Matrix
+  
+  if (TR == TRUE) {
+    
+    TR <- t(apply(M_matrix, 2, function(x) table(factor(x, levels = vn, ordered = TRUE))))
+    TR <- TR / ni
+    colnames(TR) <- vn
+    rownames(TR) <- paste0("cycle", "_", 0:nt)
+  } else {
+    TR <- NULL
+  }
+    
+  results <-
+    list(
+      M_matrix = M_matrix,
+      C_matrix = C_matrix,
+      E_matrix = E_matrix,
+      total_cost = total_cost,
+      total_effects = total_effects,
+      mean_total_cost = mean_total_cost,
+      mean_total_effects = mean_total_effects,
+      TS = TS,
+      TR = TR
+    )  
+
+  return(results) 
+
+}
+```
+
+### IV.3 REVISED `probs` Function
+
+```{r}
+probs <- function(
+  M_it, # health state for individual i at cycle t
+  dur # duration of S1/S2
+) {
+  
+  v_p_it <- rep(NA, n_s) # Create vector of state transition probabilities
+  names(v_p_it) <- vn # Name of health states
+
+  # Update Probabilities of Death after converting to rates and applying rate ratio
+
+  r_S1_D <- -log(1 - p_S1_D)
+  r_S2_D <- -log(1 - p_S2_D)
+  p_S1_D <- 1 - exp(-r_S1_D * (1 + dur * p_D_S1S2))
+  p_S2_D <- 1 - exp(-r_S2_D * (1 + dur * p_D_S1S2))
+
+  # Update vector with appropriate probabilities
+
+  v_p_it[M_it == "H"] <- c(1 - p_H_S1 - p_H_D, p_H_S1, 0, p_H_D)
+  v_p_it[M_it == "S1"] <- c(p_S1_H, 1 - p_S1_H - p_S1_S2 - p_S1_D, p_S1_S2, p_S1_D)
+  v_p_it[M_it == "S2"] <- c(0, 0, 1 - p_S2_D, p_S2_D)
+  v_p_it[M_it == "D"] <- c(0, 0, 0, 1)
+
+  if_else(
+    sum(v_p_it) == 1,
+    return(v_p_it),
+    print("Probabilities do not sum to 1")
+  )
+}
+```
+
+### IV.4 REVISED `effs` Function 
+
+```{r}
+effs <- function(M_it, dur, Trt = FALSE, cl = 1, X = NULL){
+
+  u_it <- 0 # Default utility is 0
+  u_it[M_it == "H"] <- u_H
+  u_it[M_it == "S1"] <- X * Trt * (u_Trt - dur * u_decr_S1S2) + (1 - Trt) * u_S1
+  u_it[M_it == "S2"] <- u_S2
+  qalys <- u_it * cl
+  return(qalys)
+}
+```
+
+### IV.5 Run with NO Treatment
+
+```{r}
+mem_sim_no_trt <- 
+  microsim_memory(
+    v_M1 = v_M1,
+    ni = ni,
+    nt = nt, 
+    vn = vn, 
+    X = v_init_x,
+    dc = dc,
+    de = de,
+    Trt = FALSE
+  )
+```
+
+### IV.6 Run WITH Treatment
+
+```{r}
+mem_sim_trt <- 
+  microsim_memory(
+    v_M1 = v_M1,
+    ni = ni,
+    nt = nt, 
+    vn = vn, 
+    X = v_init_x,
+    dc = dc,
+    de = de,
+    Trt = TRUE
+  )
 ```
