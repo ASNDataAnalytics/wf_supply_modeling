@@ -408,6 +408,8 @@ microsim <- function(
 
 ### II.2 Run Model
 
+#### No Treatment
+
 ```{r}
 sim_no_trt <- 
   microsim(
@@ -419,4 +421,217 @@ sim_no_trt <-
     de = de, 
     Trt = FALSE
   )
+```
+
+#### Treatment
+
+```{r}
+sim_trt <- microsim(
+  v_M1 = v_M1,
+  ni = ni,
+  nt = nt, 
+  vn = vn,
+  dc = dc,
+  de = de, 
+  Trt = TRUE
+)
+```
+
+### III. Visualize and tabulate results
+
+```{r}
+health_outcomes_no_trt <- 
+  sim_no_trt |> 
+  pluck(1) |> 
+  as_tibble(
+    rownames = "ind"
+  )  
+```
+
+
+```{r}
+health_outcomes_no_trt |> 
+  pivot_longer(
+    names_to = "cycle",
+    names_pattern = "([0-9]+)",
+    values_to = "status",
+    cols = -ind
+  ) |> 
+  mutate(
+    cycle = as.numeric(cycle),
+    status = ordered(
+      status, 
+      levels = c("D", "S2", "S1", "H")
+    )
+  ) |> 
+  filter(
+    ind %in% paste0("ind_", 1:3)
+  ) |> 
+  ggplot(
+    aes(
+      x = cycle, 
+      y = status,
+      group = ind
+    )
+  ) +
+  geom_point() +
+  geom_line() +
+  labs(
+    title = "Health Outcomes for Non-Treated Individuals",
+    y = "Health Status",
+    x = "Year"
+  ) +
+  facet_wrap(~ ind, ncol = 1) +
+  theme_asn()
+```
+
+#### III.1 Incremental Costs, Effects, Costs/Effectiveness Ratio, and Monte Carlo Standard Error (MCSE)
+
+```{r}
+
+mean_costs_vector <- 
+  c(
+    (sim_no_trt |> pluck("mean_total_cost")),
+    (sim_trt |> pluck("mean_total_cost"))
+  )
+
+se_costs_vector <-
+  c(
+    sd(
+      sim_no_trt |> 
+        pluck("total_cost")
+    ),
+    sd(
+      sim_trt |> 
+        pluck("total_cost")
+    )
+  ) / sqrt(ni)  
+
+mean_effects_vector <- 
+  c(
+    (sim_no_trt |> pluck("mean_total_effects")),
+    (sim_trt |> pluck("mean_total_effects"))
+  )
+
+se_effects_vector <-
+  c(
+    sd(
+      sim_no_trt |> 
+        pluck("total_effects")
+    ),
+    sd(
+      sim_trt |> 
+        pluck("total_effects")
+    )
+  ) / sqrt(ni)  
+
+```
+
+
+```{r}
+
+delta_costs <- mean_costs_vector[2] - mean_costs_vector[1]
+delta_effects <- mean_effects_vector[2] - mean_effects_vector[1]
+
+mcse_costs <- 
+  sd(
+    (sim_trt |> pluck("total_cost")) -
+    (sim_no_trt |> pluck("total_cost"))
+  ) / sqrt(ni)
+
+mcse_effects <- 
+  sd(
+    (sim_trt |> pluck("total_effects")) -
+    (sim_no_trt |> pluck("total_effects"))
+  ) / sqrt(ni)
+
+ICER <- delta_costs / delta_effects  
+results_vector <- c(delta_costs, delta_effects, ICER)
+
+```
+
+
+```{r}
+table_micro <- 
+  data.frame(
+    c(round(mean_costs_vector, 0), ""),
+    c(round(se_costs_vector, 0), ""),
+    c(round(mean_effects_vector, 3), ""),
+    c(round(se_effects_vector, 3), ""),
+    c("", round(delta_costs, 0), ""),
+    c("", round(mcse_costs, 0), ""),
+    c("", round(delta_effects, 3), ""),
+    c("", round(mcse_effects, 3), ""),
+    c("", round(ICER, 0), "")
+  )
+
+rownames(table_micro) <- 
+  c(v_Trt, "* are MCSE values")
+
+colnames(table_micro) <- 
+  c("Costs", "*", "QALYs", "*", "Incremental Costs", "*", 
+    "QALYs Gained", "*", "ICER"
+    )
+table_micro
+```
+
+
+```{r}
+
+sim_no_trt |> 
+  pluck("total_cost") |> 
+  enframe() |> 
+  mutate(
+    costs = value[,1]
+  ) |> 
+  ggplot(
+    aes(
+      x = costs
+    )
+  ) +
+  geom_histogram(
+    bins = 100,
+    color = "#ffffff"
+  ) +
+  scale_x_continuous(
+    labels = scales::dollar
+  ) +
+  scale_y_continuous(
+    labels = scales::comma
+  ) +
+  labs(
+    title = "Costs Distribution for No Treatment Simulation",
+    y = "n",
+    x = "$"
+  ) +
+  theme_asn()
+```
+
+
+```{r}
+
+sim_no_trt |> 
+  pluck("total_effects") |> 
+  enframe() |> 
+  mutate(
+    costs = value[,1]
+  ) |> 
+  ggplot(
+    aes(
+      x = costs
+    )
+  ) +
+  geom_histogram(
+    bins = 100,
+    color = "#ffffff"
+  ) +
+  scale_y_continuous(
+    labels = scales::comma
+  ) +
+  labs(
+    title = "QALY Distribution for No Treatment Simulation",
+    y = "n",
+    x = "QALYs"
+  ) +
+  theme_asn()
 ```
