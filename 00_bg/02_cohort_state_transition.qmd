@@ -1,0 +1,150 @@
+---
+type: html
+---
+
+## Walk-Through of Time-Dependent Cohort State-Transition Models
+
+Taken from <https://journals.sagepub.com/doi/10.1177/0272989X221121747>.
+
+```{r}
+#| label: packages
+#| echo: false
+#| warning: false
+require(asn)
+require(tidyverse)
+```
+
+### I.1 Core Components of Time-Dependent Cohort State-Transition Models
+
+| Element | Description | Variable Name |
+|------------------------|------------------------|------------------------|
+| $n_s$ | Number of states | `n_states` |
+| $m_0$ | Initial state vector | `v_m_init` |
+| $m_t$ | State vector in cycle $t$ | `v_mt` |
+| $M$ | Cohort trace matrix | `m_M` |
+| $P$ | Time-dependent transition prob array | `a_P` |
+| $A$ | Transition-dynamics array | `a_A` |
+| $n_{tunnels}$ | Number of tunnel states | `n_tunnel_size` |
+| $ns_{tunnels}$ | Number of states including tunnel states | `n_states_tunnels` |
+| $m_{tunnels0}$ | Initial state vector for model with tunneled states | `v_m_init_tunnels` |
+
+### I.2 Parameters, Variable Names, Base Case, and Distribution
+
+| Parament | Variable Name | Base Case | Distribution |
+|------------------|------------------|------------------|:----------------:|
+| Number of cycles $n_t$ | `n_cycles` | 75 years | — |
+| Names of health states | `v_names_states` | H, S1, S2, D | — |
+| Cost discount rate | `d_c` | 3% | — |
+| QALYs discount rate | `d_e` | 3% | — |
+| Number of PSA Samples (*K*) | `n_sim` | 1000 | — |
+| ***Transition Rates*** |  |  | — |
+| H \> S1 | `r_HS1` | 0.15 | gamma(30, 200) |
+| S1 \> H | `r_S1H` | 0.5 | gamma(60, 120) |
+| Time-independent S1 \> S2 | `r_S1S2` | 0.105 | gamma(84, 800) |
+| Time-dependent S1 \> S2 | `v_r_S1S2_tunnels` |  | — |
+| ***Weibull Parameters*** |  |  |  |
+| Scale (𝝀) | `r_S1S2_scale` | 0.08 | MVLN(𝜇 = (0.08, 1.10), 𝛔 = (0.02, 0.05, 𝜌 = 0.05) |
+| Scale (𝜸) | `r_S1S2_shape` | 1.10 | MVLN(𝜇 = (0.08, 1.10), 𝛔 = (0.02, 0.05, 𝜌 = 0.05) |
+| ***Annual Mortality*** |  |  |  |
+| Age-dependent background mortality (H \> D) | `v_r_HDage` | Age- specific | — |
+| HR death S1 vs H | `hr_S1` | 3.0 | lognormal(log(3.0), 0.01) |
+| HR death S2 vs H | `hr_S2` | 10.0 | lognormal(log(10.0), 0.02) |
+| ***Annual Costs*** |  |  |  |
+| Healthy | `c_H` | \$2,000 | gamma(100.00, 20.0) |
+| S1 | `c_S1` | \$4,000 | gamma(177.8, 22.5) |
+| S2 | `c_S2` | \$15,000 | gamma(225.0, 66.7) |
+| D | `c_D` | \$0 | — |
+| ***Utility Weights*** |  |  |  |
+| Healthy | `u_H` | 1 | beta(200, 3) |
+| S1 | `u_S1` | 0.75 | beta(130, 45) |
+| S2 | `u_S2` | 0.5 | beta(230, 230) |
+| D | `u_D` | 0 | — |
+| ***Treatment A*** |  |  |  |
+| Cost | `c_trtA` | \$12,000 | gamma(73.5, 163.3) |
+| Utility | `u_trtA` | 0.95 | beta(300, 15) |
+| ***Treatment B*** |  |  |  |
+| Cost | `c_trtB` | \$12,000 | gamma(73.5, 163.3) |
+| Reduction in S1 \> S2 as HR | `hr_S1S2_trtB` | log(0.6) | lognormal(log(0.6), 0.02) |
+| ***Transition Rewards*** |  |  |  |
+| Utility decrement for H | `du_HS1` | 0.01 | beta(11, 1088) |
+| Cost H \> S1 | `ic_HS1` | \$1,000 | gamma(25, 40) |
+| Cost S1 \> D | `ic_D` | \$2,000 | gamma(100, 20) |
+
+### II. Model Setup
+
+```{r}
+
+cycle_length <- 1 # cycle length equal to one year (use 1/12 for monthly)
+n_age_init <- 25  # age at baseline
+n_age_max  <- 100 # maximum age of follow up
+n_cycles <- (n_age_max - n_age_init)/cycle_length # time horizon, number of cycles
+
+hr_S1 <- 3.0
+hr_S2 <- 10.0
+
+v_names_states <- c(
+  "H",  # Healthy (H)
+  "S1", # Sick (S1)
+  "S2", # Sicker (S2)
+  "D"
+  )  # Dead (D)
+n_states <- length(v_names_states)                                            
+
+```
+
+#### II.1 Mortality Rates
+
+```{r}
+lt_usa_2015 <-
+  read_csv("00_bg/LifeTable_USA_Mx_2015.csv")
+
+# Age-specific all-cause mortality
+v_r_mort_by_age <- 
+  lt_usa_2015 |> 
+  filter(
+    between(Age, n_age_init, n_age_max) 
+  ) |> 
+  select(Total) |> 
+  as.matrix()
+```
+
+```{r}
+# Age-specific all-cause mortality in H
+v_r_HDage <- 
+  rep(v_r_mort_by_age, each = 1 / cycle_length)
+
+# Age-specific all-cause mortality for all cycles adjusting by cycle length
+v_p_HDage <- 1 - exp(-v_r_HDage * cycle_length)
+```
+
+```{r}
+
+# Age-specific mortality in S1, S2
+v_r_S1Dage <- v_r_HDage * hr_S1
+v_r_S2Dage <- v_r_HDage * hr_S2
+
+# Age-specific P(D) in S1, S2
+v_p_S1Dage <- 1 - exp(-v_r_S1Dage)
+v_p_S2Dage <- 1 - exp(-v_r_S2Dage)
+
+```
+
+Standard of Care Transition Probability Array
+
+```{r}
+
+# Create 3 Tensor
+a_P_SoC <- 
+  array(
+    0, 
+    dim = c(n_states, n_states, n_cycles),
+    dimnames = list(
+      v_names_states, 
+      v_names_states, 
+      0:(n_cycles -1)
+    )
+  )
+
+a_P_SoC["H", "H", ] <- (1 - v_p_HDage) * (1 - p_HS1)
+
+```
