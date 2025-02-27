@@ -587,3 +587,83 @@ women_no_fte |>
     )
   ) +
   geom_line()
+
+### Scratch...
+
+men_fulltime |> 
+  mutate(
+    age = round(age)
+  ) |> 
+  distinct(
+    age,
+    .keep_all = TRUE
+  )
+
+
+men_fulltime |> 
+  pull(age) |> 
+  sort() |> 
+  round() |> 
+  unique() |> length()
+
+x <- men_fulltime |> 
+  pull(age) |> 
+  sort() 
+
+map_int(x, ~ .x %/% 1) |> unique() |> (\(x) setdiff(x= 30:85, y = x))()
+
+test_df <- 
+  men_fulltime |> 
+  mutate(
+    age = map_int(age, ~.x %/% 1)
+  ) |> 
+  distinct(
+    age,
+    .keep_all = TRUE
+  )
+
+test_df_missing <- 
+  setdiff(
+    30:85,
+    test_df |> pluck("age")
+  )
+
+test_df |> 
+  bind_rows(
+    tibble(
+      age = test_df_missing,
+      p_fte = NA_real_
+    )
+  ) |> 
+  arrange(age) |> 
+  mutate(
+    p_fte = if_else(
+      is.na(p_fte), lag(p_fte), p_fte
+    )
+  ) |> 
+  ggplot(
+    aes(
+      x = age, 
+      y = p_fte
+    )
+  ) +
+  geom_area(
+    fill = asn_cols()[1]
+  ) +
+  expand_limits(
+    y = 1
+  )
+
+men_fulltime |> 
+  ggplot(
+    aes(
+      x = age, 
+      y = p_fte
+    )
+  ) +
+  geom_area(
+    fill = asn_cols()[1]
+  ) +
+  expand_limits(
+    y = 1
+  )
