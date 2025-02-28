@@ -13,6 +13,7 @@ execute:
 
 require(asn)
 require(tidyverse)
+require(patchwork)
 ```
 
 ## From UNC Sheps Article
@@ -426,7 +427,7 @@ women_no_fte <-
 
 ## Standardizing Probabilities...and Extracting PCFTE=0.5
 
-The problem with manually extracting this data....is that the x axis data is inconsistent. Need to revise so one `y` observation for each year $y$ where $x = 30, ..., 85$.
+The problem with manually extracting this data....is that the x axis data is inconsistent. Need to revise so one `y` observation for each year $x$ where $x = 30, ..., 85$.
 
 ### 1. Male—*P*(PCFTE=1)
 
@@ -513,7 +514,7 @@ women_fulltime <-
     distinct(
       age,
       .keep_all = TRUE
-  )
+    )
 
 women_fulltime_missing <- 
   setdiff(
@@ -590,21 +591,43 @@ men_prob_long <-
 
 ```{r}
 
-ggplot(
-  men_prob_long,
-  aes(
-    x = age, 
-    y = Prob, 
-    group = FTE
-    )
-  ) +
-  geom_area(
+plot_left <- 
+  ggplot(
+    men_prob_long,
     aes(
-      fill = FTE
-    )
-  ) +
-  scale_fill_asn() +
-  theme_asn()
+      x = age, 
+      y = Prob, 
+      group = FTE
+      )
+    ) +
+    geom_area(
+      aes(
+        fill = FTE
+      )
+    ) +
+    scale_fill_manual(
+      name = "",
+      values = c(
+        "#5B9BD5", "#ED7D31", "#A7A7A7"
+      ), 
+      labels = c(
+        "Full time (PCFTE = 1)",
+        "Part time (PCFTE = 0.5)",
+        "No patient care (PCFTE = 0)"
+      )
+    ) +
+    scale_y_continuous(
+      breaks = seq(0, 1, 0.2)
+    ) +
+    scale_x_continuous(
+      breaks = seq(30, 85, 5)
+    ) +
+    labs(
+      x = "Age",
+      y = "Probability",
+      title = "9a. Male 70 hour working week"
+    ) +
+    theme_asn() 
 
 ```
 
@@ -635,7 +658,8 @@ women_prob_long <-
 
 ```{r}
 
-ggplot(
+plot_right <- 
+  ggplot(
   women_prob_long,
   aes(
     x = age, 
@@ -648,8 +672,61 @@ ggplot(
       fill = FTE
     )
   ) +
-  scale_fill_asn() +
-  theme_asn()
+  scale_fill_manual(
+    name = "",
+    values = c(
+      "#5B9BD5", "#ED7D31", "#A7A7A7"
+    ), 
+    labels = c(
+      "Full time (PCFTE = 1)",
+      "Part time (PCFTE = 0.5)",
+      "No patient care (PCFTE = 0)"
+    )
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 1, 0.2)
+  ) +
+  scale_x_continuous(
+    breaks = seq(30, 85, 5)
+  ) +
+  labs(
+    x = "Age",
+    y = "Probability",
+    title = "9b. Female 70 hour working week"
+  ) +
+  theme_asn() +
+  theme(legend.position = "none")
 
 ```
 
+### Recreated Distribution
+
+```{r}
+#| fig-width: 8
+
+(plot_left + plot_right) 
+```
+
+### Save Final Dataset
+
+```{r}
+
+fte_prob_tbl <- 
+  men_prob |> 
+  mutate(
+    sex = "M"
+  ) |>
+  relocate(sex) |> 
+  bind_rows(
+    women_prob |> 
+      mutate(
+        sex = "F"
+      ) |> 
+      relocate(sex)
+  )
+
+write_csv(
+  fte_prob_tbl,
+  here::here("00_bg", "fte_prob_tbl.csv")
+)  
+```
